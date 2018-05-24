@@ -100,7 +100,7 @@ function create_enemy(x,y)
 	e.d = 0
 	e.cm = true
 	e.cw = false
-
+	
 	e.draw = function()
 		palt(0,false)
 		spr(23, e.x, e.y)
@@ -132,7 +132,7 @@ function create_enemy(x,y)
 			end
 		end	
 
-		
+			
 
 	end
 
@@ -294,15 +294,13 @@ end
 --todo move to indivual update functions probably
 function chk_collision()
 	
-	
-	
 	for enemy in all(enemies) do
 			if col(player.x, player.y,	4,4, enemy.x, enemy.y, 6, 6) and player.iframe == 0 then
 				player.health -= 1
 				sfx(2,2)
 				player.iframe = 30
 				--kills itself upon impact
-				create_coin(enemy.x,enemy.y)
+				create_coin(enemy.x,enemy.y) --TODO cleaner to move to enemy constructor 
 				del(enemies,enemy)
 			end
 
@@ -331,12 +329,6 @@ function chk_collision()
 			del(bullets, bullet)
 		end
 	end
-
-	--[[if(#coins == 0) then
-		lvl += 1
-		generate_coins()
-	end--]] 
-	--todo make enemies drop coins instead?
 
 	if(player.alive == false) then
 		menu_init()
@@ -431,12 +423,14 @@ function menu_init()
 	_update = menu_update
 	_draw = menu_draw
 	poke(0x5f2d, 1)
+	pointer = create_cursor()
 end
 
 function menu_update()
 	if(stat(34) == 1 ) then
 		game_init()
 	end
+	pointer.update()
 end
 
 function printc(str,y)
@@ -461,7 +455,7 @@ function menu_draw()
 	spr(104,80,42,2,2) --i
 	spr(106,96,42,2,2) --e
 	printc("* click anywhere to play! *", 72)
-	
+	pointer.draw()
 	if draw then
 		cls(0)
 	end
