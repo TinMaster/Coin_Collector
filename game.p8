@@ -114,17 +114,22 @@ function create_enemy(x,y)
 		local ly = e.y
 		
 		if e.tick <= 0 then
-			if(player.x < e.x) e.x -= 1 
-			if(player.x > e.x) e.x += 1 
-			if(player.y < e.y) e.y -= 1 
-			if(player.y > e.y) e.y += 1 
+			--stops them from clumping up to bad atleast still needs work 
+			if rnd() > 0.1 then 
+				if(player.x < e.x) e.x -= 1 
+				if(player.x > e.x) e.x += 1 
+				if(player.y < e.y) e.y -= 1 
+				if(player.y > e.y) e.y += 1 
+			else
+				e.x += rndb(-1,1)
+				e.y += rndb(-1,1)
+			end
 			e.tick = rnd(10,15)
 
 			if cmap(e) then
 				e.x = lx
 				e.y = ly
 			end
-
 		end	
 
 		
@@ -133,6 +138,10 @@ function create_enemy(x,y)
 
 	return e
 	
+end
+
+function rndb(l,h)
+	return flr(rnd(h-l)+l)
 end
 
 --calculate the distance between 2 objects
@@ -189,18 +198,19 @@ function create_bullet(x,y)
 	end
 	return b
 end
+
 --helper functions
-function generate_coins()
-	for i = 1, 5 + lvl do
-		create_coin()
-	end
-end
 
 function generate_enemies()
-	for i = 1, 5 + lvl  do	
-		create_enemy(-8,flr(rnd(24)) + 48)
-		create_enemy(128,flr(rnd(24)) + 48)
-		create_enemy(flr(rnd(24)) + 48,128)
+	for i = 1, 5 + lvl  do
+		--spawn at a random entrance 
+		local dir = flr(rnd(3)) + 1 
+		if (dir == 1) then create_enemy(-8,flr(rnd(24)) + 48)
+		elseif (dir == 2) then create_enemy(128,flr(rnd(24)) + 48)
+		elseif (dir == 3) then create_enemy(flr(rnd(24)) + 48,128) 
+		else
+			dir = 0
+		end
 	end
 
 end
@@ -283,13 +293,7 @@ end
 --todo move to indivual update functions probably
 function chk_collision()
 	
-	for coin in all(coins) do
-		if col(player.x, player.y,	4,4, coin.x, coin.y, 4, 4) then
-		 	del(coins,coin)
-				sfx(1)
-				player.score += 10				
-		end
-	end
+	
 	
 	for enemy in all(enemies) do
 			if col(player.x, player.y,	4,4, enemy.x, enemy.y, 6, 6) and player.iframe == 0 then
@@ -313,6 +317,14 @@ function chk_collision()
 			end
 	end
 
+	for coin in all(coins) do
+		if col(player.x, player.y,	4,4, coin.x, coin.y, 4, 4) then
+		 	del(coins,coin)
+				sfx(1)
+				player.score += 10				
+		end
+	end
+	
 	for bullet in all(bullets) do
 		if cmap(bullet) then
 			del(bullets, bullet)
@@ -344,6 +356,7 @@ function debug()
 	print("enemies: "..#enemies,0,40)	
 	print("coins: "..#coins,0,46)
 	print("memory: "..stat(0),0,52)
+	print("cpu: "..stat(1),0,60)
 end
 
 function draw_bar()
@@ -365,8 +378,9 @@ function draw_bar()
 end
 
 function _init()
+	--limit the levels and make an end boss to avoid memory issues 
 	poke(0x5f2d, 1)
-	lvl = 1
+	lvl = 1 
 	c = create_cursor()
 	player = create_player()
     generate_enemies()
@@ -388,8 +402,9 @@ end
 
 function _draw()
 	cls()
+	palt(0,true)
 	map(0,0)
-
+	spr(24,64,64)
 	palt(0,true)
 	--different code same thing
 	foreach(coins, function(obj)
@@ -404,7 +419,7 @@ function _draw()
 	end	
 	draw_bar()
 	player.draw()
-	--debug()
+	debug()
 	palt(0,true)
 	c.draw()
 end
@@ -414,8 +429,8 @@ end
 
 function gameover_init()
 	poke(0x5f2d, 1)
-	_update = gameover_update()
-	_draw = gameover_draw()
+	_update = gameover_update
+	_draw = gameover_draws
 	
 	text = {}
 
@@ -526,14 +541,14 @@ __gfx__
 000000007cccccc7000005007cccccc77cccccc70888880000000000000008805000000500000000000000000000000000000000000000000000000000000000
 000000007cccccc7000005007cccccc77cccccc70008000000000000000088000500005000000000000000000000000000000000000000000000000000000000
 00000000c777777c00000000c777777cc777777c0000000000000000000880000055550000000000000000000000000000000000000000000000000000000000
-66666166dddddddd11aaaa110aa0000018888881088088000550550035555553000000000000000000000000c777777c00000000000000000000000000000000
-66666166dddddddd1a997aa1aaaa0000118888118888888050050050533303050000000000000000000000007ccc0c0700000000000000000000000000000000
-66666166dddddddda9977aaaaaaa0000111881118888888050000050533303050000000000000000000000007ccc0c0700000000000000000000000000000000
-11111111dddddddda77aaaaaaaaa0000111881118888888050000050533303050000000000000000000000007ccc0c0700000000000000000000000000000000
-66616666ddddddddaaaaa77aaaaa0000111881110888880005000500533333350000000000000000000000007cccccc700000000000000000000000000000000
-66616666ddddddddaaaa799a0aa00000111881110088800000505000533333350000000000000000000000007cccccc700000000000000000000000000000000
-66616666dddddddd1aa799a100000000111881110008000000050000533333350000000000000000000000007cccccc700000000000000000000000000000000
-11111111dddddddd11aaaa1100000000111881110000000000000000355555530000000000000000000000007cccccc700000000000000000000000000000000
+66666166dddddddd11aaaa110aa0000018888881088088000550550035555553333803380000000000000000c777777c00000000000000000000000000000000
+66666166dddddddd1a997aa1aaaa0000118888118888888050050050533303058088000800000000000000007ccc0c0700000000000000000000000000000000
+66666166dddddddda9977aaaaaaa0000111881118888888050000050533303058000330300000000000000007ccc0c0700000000000000000000000000000000
+11111111dddddddda77aaaaaaaaa0000111881118888888050000050533303053803888300000000000000007ccc0c0700000000000000000000000000000000
+66616666ddddddddaaaaa77aaaaa0000111881110888880005000500533333353338330000000000000000007cccccc700000000000000000000000000000000
+66616666ddddddddaaaa799a0aa00000111881110088800000505000533333353380038300000000000000007cccccc700000000000000000000000000000000
+66616666dddddddd1aa799a100000000111881110008000000050000533333353000008300000000000000007cccccc700000000000000000000000000000000
+11111111dddddddd11aaaa1100000000111881110000000000000000355555533033883300000000000000007cccccc700000000000000000000000000000000
 00000000dddddddd00fff0000aa00000888888800880880000000000000000000000000000000000000000007cccccc700000000000000000000000000000000
 00000000dddddddd00fff000aaaa00008888888087e8e88000000000000000000000000000000000000000007cccccc700000000000000000000000000000000
 00000000dddddddd00fff000aaaa0000888888808ee8888000000000000000000000000000000000000000007cccccc700000000000000000000000000000000
